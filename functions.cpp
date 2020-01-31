@@ -5,30 +5,62 @@
 using namespace std;
 
 int* checkLine(char a, char b, char c) {
-	int data[3];
+	int* data = new int[3];
 	if (a == 'X') data[1]++;
-	else data[2]++;
+	else if (b == 'O') data[2]++;
 	if (b == 'X') data[1]++;
-	else data[2]++;
+	else if (b == 'O') data[2]++;
 	if (c == 'X') data[1]++;
-	else data[2]++;
+	else if (b == 'O') data[2]++;
 	data[0] = 3 - data[1] - data[2];
-	int* results = (int*)calloc(3, sizeof(int));
-	for (int i = 0, *p = results; i < 3; i++, p++) *p = data[i];
-	return results;
+	return data;
 }
 
 int** checkGrid(char grid[9], int phase) {
-	int j = 0;
-	int *checks[8]; //0to 2 is vertical 3to5 is horizontal6&7 in diagonal
-	for (int i = 0; i < 3 && ((phase & 2) >> 1); i++) checks[j++] = checkLine(grid[i], grid[i + 3], grid[i + 6]); //check column
-	for (int i = 0; i < 3 && ((phase & 4) >> 2); i++) checks[j++] = checkLine(grid[i*3], grid[i*3 + 1], grid[i*3 + 2]); //check row
-	checks[6] = checkLine(grid[0], grid[4], grid[8]);
-	checks[7] = checkLine(grid[2], grid[4], grid[6]);
+	int j = 2;
+	int **checks = new int*[8]; //0to1 diagonal 2to 5 is vertical 5to7 is horizontal
+	for (int i = 0; i < 3 && (phase & 1) ; i++) checks[j++] = checkLine(grid[i], grid[i + 3], grid[i + 6]); //check column
+	for (int i = 0; i < 3 && ((phase & 2) >> 1); i++) checks[j++] = checkLine(grid[i*3], grid[i*3 + 1], grid[i*3 + 2]); //check row
+	checks[0] = checkLine(grid[0], grid[4], grid[8]);
+	checks[1] = checkLine(grid[2], grid[4], grid[6]);
+	return checks;
+}
 
-	int** results = (int**)calloc(8, sizeof(int));
-	for (int i = 0, **p = results; i < 8; i++, p++) *p = checks[i];
-	return results;
+int** checkBoard(char grid[27]) {
+	char* c = grid;
+	int** result = new int* [43];
+	int** p = result;
+	for (int i = 0; i < 27; i += 9) {
+		int **xgrid = checkGrid((grid + i), 3);
+		for (int** a = xgrid; p < (result + ((i/9)+1)*8); a++, p++) *p = *a;
+		delete xgrid;
+	}
+	for (int i = 0; i < 9; i += 3) {
+		char g[9] = { c[i], c[i + 1], c[i + 2], c[i + 9], c[i + 11], c[i + 12], c[i + 18], c[i + 19], c[i + 20] };
+		int** ygrid = checkGrid(g, 1);
+		for (int** a = ygrid; p < (result + ((i/3) + 1) * 5 + 24); a++, p++) {
+			*p = *a;
+			cout << (p - result) << " " << *result[(p - result)] << endl;
+		}
+		delete ygrid;
+	}
+	{char g[9] = { c[0], c[3],c[6],c[10],c[13],c[16], c[20], c[23],c[26] };
+	int** xygrid = checkGrid(g, 0);
+	*(p++) = *(xygrid);
+	*(p++) = *(xygrid+1);
+	delete xygrid;
+	}
+	{char g[9] = { c[2], c[5],c[8],c[10],c[13],c[16], c[18], c[21],c[24] };
+	int** xygrid = checkGrid(g, 0);
+	*(p++) = *(xygrid);
+	*(p) = *(xygrid + 1);
+	delete xygrid;
+	}
+	for (int i = 0; i < 42; i++) {
+		cout << *(result[i]) << " " << endl;
+	}
+	cout << endl;
+	return result;
 }
 
 void greetAndInstruct() {
@@ -68,11 +100,17 @@ void displayBoard(char board[]) {
 
 bool checkIfLegal(int cellNbre, char board[]) {
 	if (cellNbre < 1 || cellNbre > 27) return false;
-	cellNbre--;
-	if (board[cellNbre] != ' ') return false;
-	return true;
+	return (board[--cellNbre]=='\0');
 }
 
-bool checkWinner(char board[]) { return false; }
+bool checkWinner(char board[]) {
+	int** results = checkBoard(board);
+	for (int i = 0; i < 43; i++) {
+		if (max((results[i])[1], (results[i])[2]) == 3) return true;
+	}
+	return false; 
+}
 
-void computerMove(char board[]) {}
+void computerMove(char board[]) {
+	
+}
